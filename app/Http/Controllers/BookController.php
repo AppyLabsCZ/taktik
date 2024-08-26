@@ -74,7 +74,6 @@ class BookController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'author_id' => 'required|exists:authors,id',
         ]);
 
         $book = Book::findOrFail($id);
