@@ -88,7 +88,7 @@ class BookController extends Controller
         $book = Book::findOrFail($id);
 
         // Odstranit související záznamy v book_genres
-        $book->genres()->delete();
+        $book->genres()->detach();
 
         // Nyní můžeme bezpečně odstranit samotnou knihu
         $book->delete();
