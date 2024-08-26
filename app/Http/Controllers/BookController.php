@@ -19,8 +19,12 @@ class BookController extends Controller
         // Doba uložení do cache (v minutách)
         $cacheDuration = 60;
 
+        // jen pro info do postmana, abych věděl, jestli výsledky jsou z cache nebo fresh
+        $cacheHit = false;
+
         // Pokusíme se získat výsledky z cache
-        $books = Cache::remember($cacheKey, $cacheDuration, function () use ($request) {
+        $books = Cache::remember($cacheKey, $cacheDuration, function () use ($request, &$cacheHit) {
+            $cacheHit = true;
             $query = Book::with(['author', 'genres']);
 
             // Filtrování
@@ -42,7 +46,7 @@ class BookController extends Controller
             $perPage = $request->input('per_page', 10); // výchozí hodnota je 10
             $books = $query->paginate($perPage);
 
-            // --- Seskupování v paměti ---
+            // Seskupování v paměti
             if ($request->has('group_by')) {
                 $groupBy = $request->input('group_by');
                 $grouped = $books->getCollection()->groupBy($groupBy);
@@ -62,7 +66,15 @@ class BookController extends Controller
             return $books;
         });
 
-        return response()->json($books);
+        // Vytvoří odpověď
+        $response = response()->json($books);
+
+        // Přidáme hlavičku, pokud cache hit
+        if ($cacheHit) {
+            $response->header('X-Cache-Hit', 'true');
+        }
+
+        return $response;
     }
 
     // Funkce pro generování cache klíče na základě query parametrů
