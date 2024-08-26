@@ -51,4 +51,22 @@ class BookController extends Controller
 
         return response()->json($books);
     }
+
+    public function store(Request $request)
+    {
+        // Validace vstupu
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'author_id' => 'required|integer|exists:authors,id',
+        ]);
+
+        // Vytvoříme novou knihu
+        $book = Book::create([
+            'title' => $request->input('title'),
+            'author_id' => $request->input('author_id'),
+        ]);
+
+        // Vrátíme odpověď v JSON
+        return response()->json($book, 201);
+    }
 }
