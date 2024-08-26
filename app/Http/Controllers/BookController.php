@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -82,9 +83,14 @@ class BookController extends Controller
         return response()->json($book, 201);
     }
 
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
         $book = Book::findOrFail($id);
+
+        // Odstranit související záznamy v book_genres
+        $book->genres()->delete();
+
+        // Nyní můžeme bezpečně odstranit samotnou knihu
         $book->delete();
 
         return response()->json(null, 204);
