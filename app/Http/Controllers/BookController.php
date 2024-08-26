@@ -7,50 +7,69 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 
 class BookController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Book::with(['author', 'genres']);
+        // Generování cache klíče na základě query parametrů
+        $cacheKey = $this->generateCacheKey($request->query->all());
 
-        // Filtrování
-        if ($request->has('filter')) {
-            $filters = $request->input('filter');
-            foreach ($filters as $field => $value) {
-                $query->where($field, 'like', "%$value%");
+        // Doba uložení do cache (v minutách)
+        $cacheDuration = 60;
+
+        // Pokusíme se získat výsledky z cache
+        $books = Cache::remember($cacheKey, $cacheDuration, function () use ($request) {
+            $query = Book::with(['author', 'genres']);
+
+            // Filtrování
+            if ($request->has('filter')) {
+                $filters = $request->input('filter');
+                foreach ($filters as $field => $value) {
+                    $query->where($field, 'like', "%$value%");
+                }
             }
-        }
 
-        // Řazení
-        if ($request->has('sort_by')) {
-            $sortBy = $request->input('sort_by');
-            $sortOrder = $request->input('sort_order', 'asc'); // výchozí hodnota je 'asc'
-            $query->orderBy($sortBy, $sortOrder);
-        }
+            // Řazení
+            if ($request->has('sort_by')) {
+                $sortBy = $request->input('sort_by');
+                $sortOrder = $request->input('sort_order', 'asc'); // výchozí hodnota je 'asc'
+                $query->orderBy($sortBy, $sortOrder);
+            }
 
-        // Stránkování
-        $perPage = $request->input('per_page', 10); // výchozí hodnota je 10
-        $books = $query->paginate($perPage);
+            // Stránkování
+            $perPage = $request->input('per_page', 10); // výchozí hodnota je 10
+            $books = $query->paginate($perPage);
 
-        // --- Seskupování v paměti ---
-        if ($request->has('group_by')) {
-            $groupBy = $request->input('group_by');
-            $grouped = $books->getCollection()->groupBy($groupBy);
+            // --- Seskupování v paměti ---
+            if ($request->has('group_by')) {
+                $groupBy = $request->input('group_by');
+                $grouped = $books->getCollection()->groupBy($groupBy);
 
-            // Převedeme skupiny zpět do paginátoru
-            $books = new LengthAwarePaginator(
-                $grouped,
-                $books->total(),
-                $books->perPage(),
-                $books->currentPage(),
-                [
-                    'path' => LengthAwarePaginator::resolveCurrentPath()
-                ]
-            );
-        }
+                // Převedeme skupiny zpět do paginátoru
+                $books = new LengthAwarePaginator(
+                    $grouped,
+                    $books->total(),
+                    $books->perPage(),
+                    $books->currentPage(),
+                    [
+                        'path' => LengthAwarePaginator::resolveCurrentPath()
+                    ]
+                );
+            }
+
+            return $books;
+        });
 
         return response()->json($books);
+    }
+
+    // Funkce pro generování cache klíče na základě query parametrů
+    private function generateCacheKey($queryParams)
+    {
+        ksort($queryParams);
+        return 'books_' . http_build_query($queryParams);
     }
 
     public function store(Request $request)
