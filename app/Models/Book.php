@@ -36,4 +36,9 @@ class Book extends Model
         return $this->belongsToMany(Genre::class, 'book_genres');
     }
 
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
 }

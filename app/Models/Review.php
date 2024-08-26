@@ -18,7 +18,7 @@ class Review extends Model
         'reviewable_type',
         'reviewable_id'
     ];
-    
+
     protected function casts(): array
     {
         return [
@@ -26,6 +26,11 @@ class Review extends Model
             'user_id' => 'int',
             'rating' => 'int',
         ];
+    }
+
+    public function reviewable()
+    {
+        return $this->morphTo();
     }
 
 }

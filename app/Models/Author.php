@@ -30,4 +30,9 @@ class Author extends Model
         return $this->hasMany(Book::class);
     }
 
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
 }
