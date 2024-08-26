@@ -69,4 +69,25 @@ class BookController extends Controller
         // Vrátíme odpověď v JSON
         return response()->json($book, 201);
     }
+
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'author_id' => 'required|exists:authors,id',
+        ]);
+
+        $book = Book::findOrFail($id);
+        $book->update($validated);
+
+        return response()->json($book, 201);
+    }
+
+    public function destroy($id)
+    {
+        $book = Book::findOrFail($id);
+        $book->delete();
+
+        return response()->json(null, 204);
+    }
 }
